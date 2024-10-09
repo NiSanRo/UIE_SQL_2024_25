@@ -212,15 +212,109 @@ ORDER BY Categoria ASC,Num_Fotos ASC;
 -- 
 
 -- UNION
+SELECT order_status as Estado_Pedido,
+TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+count(1) AS Registros
+FROM orders 
+WHERE order_approved_at 
+BETWEEN  '2017-09-01 00:00:00'  AND  '2017-09-30 23:59:59'
+GROUP BY Estado_Pedido,Fecha_Aprobacion
+UNION
+SELECT order_status as Estado_Pedido,
+TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+count(1) AS Registros
+FROM orders 
+WHERE order_status='shipped' 
+AND order_approved_at 
+BETWEEN  '2017-08-01 00:00:00'  AND  '2017-08-31 23:59:59'
+GROUP BY Estado_Pedido,Fecha_Aprobacion
+ORDER BY Estado_Pedido DESC,Fecha_Aprobacion ASC;
+
 -- INTERSECT
+SELECT order_status as Estado_Pedido,
+TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+count(1) AS Registros
+FROM orders 
+WHERE order_approved_at 
+BETWEEN  '2017-08-15 00:00:00'  AND  '2017-09-30 23:59:59'
+GROUP BY Estado_Pedido,Fecha_Aprobacion
+INTERSECT 
+SELECT order_status as Estado_Pedido,
+TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+count(1) AS Registros
+FROM orders 
+WHERE order_status='shipped' 
+AND order_approved_at 
+BETWEEN  '2017-08-01 00:00:00'  AND  '2017-08-31 23:59:59'
+GROUP BY Estado_Pedido,Fecha_Aprobacion
+ORDER BY Estado_Pedido DESC,Fecha_Aprobacion ASC;
+
 -- EXCEPT
+SELECT order_status as Estado_Pedido,
+TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+count(1) AS Registros
+FROM orders 
+WHERE order_status='shipped' 
+AND order_approved_at 
+BETWEEN  '2017-08-01 00:00:00'  AND  '2017-08-31 23:59:59'
+GROUP BY Estado_Pedido,Fecha_Aprobacion
+EXCEPT
+SELECT order_status as Estado_Pedido,
+TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+count(1) AS Registros
+FROM orders 
+WHERE order_approved_at 
+BETWEEN  '2017-08-15 00:00:00'  AND  '2017-09-30 23:59:59'
+GROUP BY Estado_Pedido,Fecha_Aprobacion
+ORDER BY Estado_Pedido DESC,Fecha_Aprobacion ASC;
 
 --
 -- 5. Common Table Expression (CTE)
 -- 
 
 -- CTE
+WITH pedidos_shipped AS (
+	SELECT order_status as Estado_Pedido,	TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+	count(1) AS Registros
+	FROM orders 
+	WHERE order_status='shipped' 
+	AND order_approved_at 	BETWEEN  '2017-08-01 00:00:00'  AND  '2017-08-31 23:59:59'
+	GROUP BY Estado_Pedido,Fecha_Aprobacion
+),
+pedidos_todos AS(
+	SELECT order_status as Estado_Pedido,	TO_CHAR(order_approved_at, 'dd/mm/yyyy') AS Fecha_Aprobacion,
+	count(1) AS Registros
+	FROM orders 
+	WHERE order_approved_at 	BETWEEN  '2017-08-15 00:00:00'  AND  '2017-09-30 23:59:59'
+	GROUP BY Estado_Pedido,Fecha_Aprobacion
+)
+SELECT Estado_Pedido, Fecha_Aprobacion,Registros
+FROM pedidos_shipped
+EXCEPT
+SELECT Estado_Pedido, Fecha_Aprobacion,Registros
+FROM pedidos_todos
+ORDER BY Estado_Pedido DESC,Fecha_Aprobacion ASC;
+
 -- CTE Recursivo
+
+-- En la tabla customers tenemos una jerarquía con CUSTOMER_ID
+SELECT customer_unique_id,count(1) AS Registros
+FROM customers
+GROUP BY customer_unique_id
+HAVING count(1)>=4; 
+
+WITH RECURSIVE customer_parent  AS (
+	SELECT customer_id,customer_unique_id
+	FROM customers
+    WHERE customer_unique_id IN 
+    	('63cfc61cee11cbe306bff5857d00bfe4','b2bd387fdc3cf05931f0f897d607dc88','a239b8e2fbce33780f1f1912e2ee5275','56c8638e7c058b98aae6d74d2dd6ea23')
+	UNION 
+	SELECT c.customer_id,c.customer_unique_id
+	FROM customers c
+	INNER JOIN customer_parent p ON p.customer_unique_id=c.customer_unique_id AND p.customer_unique_id<>c.customer_id
+)
+SELECT * FROM customer_parent
+ORDER BY customer_unique_id ASC;
 
 --
 --  6. Combinando Tablas
@@ -278,9 +372,15 @@ ORDER BY Categoria ASC,Num_Fotos ASC;
 --
 
 -- Tipos de datos
-select oid, typname as TIPO
-from pg_type;
 -- CREATE TABLE
+
+
 -- CREATE TABLE AS
+
 -- ALTER TABLE
+
+
 -- DROP y TRUNCATE TABLE
+TRUNCATE [ TABLE ] [ ONLY ] name [ * ] [, ... ]
+    [ RESTART IDENTITY | CONTINUE IDENTITY ] [ CASCADE | RESTRICT ]
+
