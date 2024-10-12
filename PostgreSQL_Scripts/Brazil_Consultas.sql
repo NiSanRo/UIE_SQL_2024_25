@@ -428,6 +428,21 @@ LEFT JOIN film_actor fa ON fa.actor_id =a.actor_id
 WHERE fa.actor_id IS NULL; 
 
 -- RIGHT JOIN
+-- Devuelve el listado de actores en las películas 'AIRBAG' ,'BUTCH PANTHER','AFRICAN EGG'
+SELECT  f.title AS pelicula,a.first_name AS nombre_actor, a.last_name AS apellido_actor
+FROM actor a 
+RIGHT JOIN film_actor fa ON fa.actor_id =a.actor_id 
+RIGHT JOIN film f ON f.film_id =fa.film_id 
+WHERE UPPER(f.title) IN ('AIRBAG' ,'BUTCH PANTHER','AFRICAN EGG')
+ORDER BY pelicula DESC,nombre_actor ASC, apellido_actor ASC;
+
+-- Devuelve el listado de películas para el que no se tiene información del reparto
+SELECT  f.title AS pelicula,fa.actor_id 
+FROM film_actor fa  
+RIGHT JOIN film f ON f.film_id =fa.film_id 
+WHERE fa.actor_id IS NULL 
+ORDER BY pelicula DESC;
+
 -- SELF-JOIN
 -- FULL OUTER JOIN
 

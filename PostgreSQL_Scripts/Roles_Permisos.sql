@@ -226,3 +226,14 @@ ALTER TABLE alquila_dvd.actor ALTER actor_id DROP DEFAULT;
 ALTER TABLE alquila_dvd.actor ALTER COLUMN actor_id  SET DATA TYPE int; 
 ALTER TABLE alquila_dvd.actor ALTER COLUMN actor_id DROP DEFAULT;
 ALTER TABLE alquila_dvd.actor ALTER COLUMN actor_id ADD GENERATED ALWAYS AS IDENTITY (RESTART 500);
+-- Ponemos como identidad el valor de film_id
+ALTER TABLE alquila_dvd.film ALTER film_id DROP DEFAULT;
+ALTER TABLE alquila_dvd.film ALTER COLUMN film_id  SET DATA TYPE int; 
+ALTER TABLE alquila_dvd.film ALTER COLUMN film_id ADD GENERATED ALWAYS AS IDENTITY (RESTART 1500);
+-- Ponemos como identidad el valor de film_id
+ALTER TABLE alquila_dvd.language ALTER language_id DROP DEFAULT;
+ALTER TABLE alquila_dvd.language ALTER COLUMN language_id  SET DATA TYPE int; 
+ALTER TABLE alquila_dvd.language ALTER COLUMN language_id ADD GENERATED ALWAYS AS IDENTITY (RESTART 100);
+-- Ponemos como char(1)
+INSERT INTO alquila_dvd.LANGUAGE (name, last_update)  VALUES( 'Spanish', now());
+
