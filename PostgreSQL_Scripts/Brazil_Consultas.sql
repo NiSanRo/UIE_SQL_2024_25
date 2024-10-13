@@ -412,6 +412,15 @@ INNER JOIN film_actor fa ON fa.actor_id =a.actor_id
 INNER JOIN film f ON f.film_id =fa.film_id 
 WHERE UPPER(a.first_name) ='CUBA' AND UPPER(last_name)='OLIVIER' ;
 
+-- Usando cláusula USING
+SELECT a.first_name AS nombre, a.last_name AS apellido, f.title AS pelicula
+FROM actor a 
+INNER JOIN film_actor fa ON fa.actor_id =a.actor_id 
+INNER JOIN film f USING(film_id) 
+WHERE UPPER(a.first_name) ='CUBA' AND UPPER(last_name)='OLIVIER' ;
+
+
+
 -- LEFT JOIN
 -- Devuelve todos los registros de la primera tabla (izquierda) que tengan o no valore coincidentes en la segunda (derecha)
 SELECT a.first_name AS nombre, a.last_name AS apellido, f.title AS pelicula
@@ -443,62 +452,319 @@ RIGHT JOIN film f ON f.film_id =fa.film_id
 WHERE fa.actor_id IS NULL 
 ORDER BY pelicula DESC;
 
--- SELF-JOIN
 -- FULL OUTER JOIN
+-- Devuelve el listado de actores y películas para los que, o bien no hay ninguna película en la que participe, 
+-- o no tenga reparto asociado.
+SELECT  f.title AS pelicula,a.first_name AS nombre_actor, a.last_name AS apellido_actor
+FROM actor a 
+FULL OUTER JOIN film_actor fa ON fa.actor_id =a.actor_id 
+FULL OUTER JOIN film f ON f.film_id =fa.film_id 
+WHERE fa.actor_id IS NULL OR fa.film_id IS NULL
+ORDER BY pelicula DESC,nombre_actor ASC, apellido_actor ASC;
 
-SELECT * FROM 
+-- CROSS JOIN
+-- Combinar todos los valores de actores y películas.
+SELECT  a.*,f.*
+FROM actor a 
+CROSS JOIN film f  
+ORDER BY a.actor_id,a.last_name;
 
+-- SELF-JOIN
+-- Devolver el listado de películas (títulos y duración) con idéntica duración.
+-- Mostrar los resultados ordenados de menor a mayor duración.
+SELECT f.title AS titulo_1, f2.title AS titulo_2,  f.length AS duracion 
+FROM film f
+INNER JOIN film f2 ON f.film_id <> f2.film_id 
+AND f.length = f2.length
+ORDER BY duracion,titulo_1,titulo_2;
+
+-- Sin repetidos
+SELECT f.title AS titulo_1, f2.title AS titulo_2,  f.length AS duracion 
+FROM film f
+INNER JOIN film f2 ON f.film_id < f2.film_id 
+AND f.length = f2.length
+ORDER BY duracion,titulo_1,titulo_2;
+
+-- NATURAL JOIN
+-- Comprobación de tipos de columnas para columnas con nombre coincidente
+WITH columnas AS (
+	SELECT table_name AS tabla,column_name AS columna,data_type AS tipo_dato 
+	FROM information_schema.COLUMNS
+	WHERE table_catalog='brazil' AND table_schema='alquila_dvd'
+)
+SELECT c1.tabla AS tabla_1,c2.tabla AS tabla_2,c1.columna AS columna_1,c2.columna AS columna_2,
+c1.tipo_dato AS tipo_dato_1, c2.tipo_dato AS tipo_dato_2
+FROM columnas c1
+INNER JOIN columnas c2 ON c1.tabla<>c2.tabla AND c1.columna=c2.columna
+WHERE c1.columna ='address_id' OR c1.columna ='actor_id' 
+ORDER BY columna_1;
+
+-- Comparación de columnas para dos tablas
+WITH columnas AS (
+	SELECT table_name AS tabla,column_name AS columna,data_type AS tipo_dato 
+	FROM information_schema.COLUMNS
+	WHERE table_catalog='brazil' AND table_schema='alquila_dvd'
+)
+SELECT c1.tabla AS tabla_1,c2.tabla AS tabla_2,c1.columna AS columna_1,c2.columna AS columna_2,
+c1.tipo_dato AS tipo_dato_1, c2.tipo_dato AS tipo_dato_2
+FROM columnas c1
+INNER JOIN columnas c2 ON c1.tabla<>c2.tabla AND c1.columna=c2.columna
+WHERE c1.tabla ='customer' AND c2.tabla ='staff' 
+ORDER BY columna_1;
+
+-- No cruza porque los tipos de datos son diferentes
+SELECT a.first_name AS nombre_actor, a.last_name AS apellido_actor 
+FROM actor a 
+NATURAL JOIN film_actor fa;
+
+-- Existe cruce
+SELECT c.first_name AS nombre_cliente,c.last_name AS apellido_cliente,
+s.first_name AS nombre_empleado, s.last_name AS apellido_empleado
+FROM customer c
+NATURAL JOIN staff s;
+
+-- JOIN CON USING
+SELECT a.first_name AS nombre_actor, a.last_name AS apellido_actor, fa.film_id 
+FROM actor a 
+JOIN film_actor fa USING (actor_id);
+
+-- Usando NATURAL no devuelve nada por que los tipos de datos son diferentes
+SELECT a.first_name AS nombre_actor, a.last_name AS apellido_actor, fa.film_id 
+FROM actor a 
+NATURAL JOIN film_actor fa;
+
+-- ANTI - JOIN
+-- Listar aquellos actores para los que no tenemos ninguna película en el inventario 
+-- y las películas para que no tenemos ningún actor del reparto
+SELECT  f.title AS pelicula,a.first_name AS nombre_actor, a.last_name AS apellido_actor
+FROM actor a 
+FULL OUTER JOIN film_actor fa ON fa.actor_id =a.actor_id 
+FULL OUTER JOIN film f ON f.film_id =fa.film_id 
+WHERE fa.actor_id IS NULL OR fa.film_id IS NULL
+ORDER BY pelicula DESC,nombre_actor ASC, apellido_actor ASC;
+
+-- ANTI SEMI JOIN
+-- Listar aquellos actores para los que no tenemos ninguna película en el inventario
+SELECT a.actor_id,a.first_name AS nombre, a.last_name AS apellido, fa.actor_id 
+FROM actor a 	
+LEFT JOIN film_actor fa ON fa.actor_id =a.actor_id 
+WHERE fa.actor_id IS NULL; 
 
 --
 -- 7. SUBQUERY
 -- 
 
 -- Subquery
--- Correlated Subquery
+-- Listado de películas en las que en el reparto interviene algún actor con nombre que empieza por HUM
+SELECT f.title AS pelicula,a.first_name  AS nombre,a.last_name AS Apellido
+FROM actor a 
+INNER JOIN film_actor fa ON a.actor_id =fa.actor_id 
+INNER JOIN film f ON fa.film_id =f.film_id 
+WHERE a.actor_id IN (
+	SELECT actor_id 
+	FROM actor a 
+	WHERE UPPER(a.first_name) LIKE 'HUM%'
+)
+ORDER BY pelicula;
+
+--SUBQUERY CORRELADA
+-- Listar las películas que tienen más duración que el promedio para su clasificación
+SELECT title AS pelicula, length AS duracion, rating AS clasificacion
+FROM film f
+WHERE length > (
+    SELECT AVG(length)
+    FROM film
+    WHERE rating = f.rating
+);
+
 -- ANY Operator
+SELECT customer_id,count(1) AS coincidencias 
+FROM rental  
+WHERE inventory_id = ANY(
+	SELECT   r.inventory_id  
+	FROM customer c 
+	INNER JOIN rental r ON c.customer_id =r.customer_id 
+	WHERE upper(c.first_name)='BRIAN' AND upper(c.last_name)='WYMAN'
+)
+GROUP BY customer_id 
+ORDER BY coincidencias DESC;
+
+WITH  cluster_brian_wyman AS (
+	SELECT customer_id 
+	FROM rental  
+	WHERE inventory_id = ANY(
+		SELECT   r.inventory_id  
+		FROM customer c 
+		INNER JOIN rental r ON c.customer_id =r.customer_id 
+		WHERE upper(c.first_name)='BRIAN' AND upper(c.last_name)='WYMAN'
+	)
+)
+SELECT c.first_name AS nombre,c.last_name AS apellido,count(1) AS coincidencias
+FROM customer c
+INNER JOIN cluster_brian_wyman cb ON c.customer_id=cb.customer_id
+WHERE UPPER(c.first_name)<>'BRIAN' OR upper(c.last_name)<>'WYMAN'
+GROUP BY nombre,apellido
+ORDER BY coincidencias DESC;
+
 -- ALL Operator
+-- igual que el ANY
+
 -- EXISTS Operator
+-- Comprobar que clientes han realizado al menos un pago con un importe superior a 7
+SELECT customer_id,first_name AS nombre,  last_name AS apellido
+FROM customer c 
+WHERE 
+  EXISTS (
+    SELECT 1 
+    FROM payment p 
+    WHERE p.customer_id = c.customer_id 
+      AND amount > 7
+  ) 
+ORDER BY customer_id ;
+
+SELECT count(1) 
+FROM payment p 
+WHERE customer_id =1 
+AND amount >7;
+
+-- Clientes que nunca han hecho un pago por encima de 7
+SELECT customer_id,first_name AS nombre,  last_name AS apellido
+FROM customer c 
+WHERE 
+  NOT EXISTS (
+    SELECT 1 
+    FROM payment p 
+    WHERE p.customer_id = c.customer_id 
+      AND amount > 7
+  ) 
+ORDER BY customer_id ;
+
+SELECT count(1) 
+FROM payment p 
+WHERE customer_id =38 
+AND amount >7;
 
 --
 -- 8. Expresiones condicionales y Operadores
 --
 
 -- CASE … WHEN… ELSE.. END
+
+-- Moda en el número de alquileres
+WITH alquileres AS (
+	SELECT c.customer_id,count(1) AS alquileres 
+	FROM customer c 
+	INNER JOIN rental r ON c.customer_id =r.customer_id
+	GROUP BY c.customer_id 
+)
+SELECT MODE() WITHIN GROUP (ORDER BY alquileres)
+FROM alquileres;
+
+-- Tipología
+WITH alquileres AS (
+	SELECT c.customer_id,count(1) AS alquileres 
+	FROM customer c 
+	INNER JOIN rental r ON c.customer_id =r.customer_id
+	GROUP BY c.customer_id 
+)
+SELECT c.first_name AS nombre, c.last_name AS apellido,a.alquileres,
+CASE 
+	WHEN a.alquileres < 22 THEN 'OCASIONALES' 
+	WHEN a.alquileres>=22 AND a.alquileres <31 THEN 'RECURRENTES'  
+	ELSE 'VIP'
+END AS Tipo_Cliente
+FROM customer c 
+INNER JOIN alquileres a ON c.customer_id =a.customer_id
+ORDER BY alquileres DESC, nombre ASC, apellido ASC;
+
 -- COALESCE
+
+-- Cálculo con valores NULOS, no los tiene en cuenta
+WITH pagos AS (
+	SELECT c.customer_id,sum(p.amount) AS total_compras 
+	FROM customer c 
+	LEFT JOIN rental r ON c.customer_id =r.customer_id
+	LEFT JOIN payment p ON r.rental_id =p.rental_id 
+	GROUP BY c.customer_id 
+)
+SELECT AVG(total_compras)
+FROM pagos;
+
+-- Cálculo con COALESCE para poner nulos a 0
+WITH pagos AS (
+	SELECT c.customer_id,sum(COALESCE(p.amount,0)) AS total_compras 
+	FROM customer c 
+	LEFT JOIN rental r ON c.customer_id =r.customer_id
+	LEFT JOIN payment p ON r.rental_id =p.rental_id 
+	GROUP BY c.customer_id 
+)
+SELECT AVG(total_compras)
+FROM pagos;
+
 -- NULLIF
+-- Ratio de clientes con activebool TRUE frente a FALSE
+SELECT SUM(CASE WHEN activebool= TRUE THEN 1 ELSE 0 END) AS verdadero,
+SUM(CASE WHEN activebool= FALSE THEN 1 ELSE 0 END) AS falso,
+SUM(CASE WHEN activebool= TRUE THEN 1 ELSE 0 END)/SUM(CASE WHEN activebool= FALSE THEN 1 ELSE 0 END) AS ratio
+FROM customer; 
+
+-- Con NULLIF para evitar division por 0
+SELECT SUM(CASE WHEN activebool= TRUE THEN 1 ELSE 0 END) AS verdadero,
+SUM(CASE WHEN activebool= FALSE THEN 1 ELSE 0 END) AS falso,
+SUM(CASE WHEN activebool= TRUE THEN 1 ELSE 0 END)/NULLIF( SUM(CASE WHEN activebool= FALSE THEN 1 ELSE 0 END), 0) AS ratio
+FROM customer; 
+
 -- CAST
+SELECT  category_id, CAST(category_id AS NUMERIC(10,2)) AS category_id_float
+FROM category;
 
 --
 -- 9. Funciones de Ventana
 --
 
 -- OVER 
+WITH compras AS (
+	SELECT c.store_id,c.customer_id,
+	sum(COALESCE(p.amount,0))  AS total_compras
+	FROM customer c 
+	LEFT JOIN rental r ON c.customer_id =r.customer_id
+	LEFT JOIN payment p ON r.rental_id =p.rental_id
+	GROUP BY c.store_id,c.customer_id
+)
+SELECT store_id,customer_id,total_compras,
+RANK() OVER (ORDER BY total_compras DESC) AS ranking_ventas
+FROM compras
+ORDER BY ranking_ventas;
+
 -- PARTITION
+-- Ranking de clientes por total de compras y por tienda
+WITH compras AS (
+	SELECT c.store_id,c.customer_id,
+	sum(COALESCE(p.amount,0))  AS total_compras
+	FROM customer c 
+	LEFT JOIN rental r ON c.customer_id =r.customer_id
+	LEFT JOIN payment p ON r.rental_id =p.rental_id
+	GROUP BY c.store_id,c.customer_id
+)
+SELECT store_id,customer_id,total_compras,
+RANK() OVER (PARTITION BY store_id ORDER BY total_compras DESC) AS ranking_ventas
+FROM compras;
+ORDER BY ranking_ventas;
 
---
--- 10. Modificando los datos
---
-
--- INSERT
--- INSERT INTO.. (SELECT…)
--- UPDATE
--- UPDATE JOIN
--- DELETE
--- DELETE JOIN
--- UPSERT
--- MERGE
-
---
--- 11. Gestionando las tablas
---
-
--- Tipos de datos
--- CREATE TABLE
-
-
--- CREATE TABLE AS
-
--- ALTER TABLE
-
-
-
+-- Rankint total y parcial, promedio parcial y máximo y mínimo parcial
+WITH compras AS (
+	SELECT c.store_id,c.customer_id,
+	sum(COALESCE(p.amount,0))  AS total_compras
+	FROM customer c 
+	LEFT JOIN rental r ON c.customer_id =r.customer_id
+	LEFT JOIN payment p ON r.rental_id =p.rental_id
+	GROUP BY c.store_id,c.customer_id
+)
+SELECT store_id,customer_id,total_compras,
+RANK() OVER (ORDER BY total_compras DESC) AS ranking_total,
+RANK() OVER (PARTITION BY store_id ORDER BY total_compras DESC) AS ranking_tienda,
+MAX(total_compras) OVER (PARTITION BY store_id) AS mayor_tienda,
+AVG(total_compras) OVER (PARTITION BY store_id) AS media_tienda,
+MIN(total_compras) OVER (PARTITION BY store_id) AS menor_tienda
+FROM compras
+ORDER BY ranking_total;

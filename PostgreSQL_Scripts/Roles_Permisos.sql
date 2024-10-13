@@ -48,7 +48,11 @@ FROM pg_namespace n
 JOIN  pg_roles r ON r.rolname = '<<usuario>>'
 WHERE  n.nspname = 'alquila_dvd';
 
+-- Le vamos a dar permisos para crear sus propios objetos, pero no para 
+-- manipular los existentes
+GRANT CREATE ON SCHEMA alquila_dvd TO alquila_dvd;
 -- Permisos para leer cualquier tabla que sea creada a posteriori
+
 ALTER DEFAULT PRIVILEGES IN SCHEMA alquila_dvd GRANT ALL PRIVILEGES  ON TABLES TO uie_permisos;
 ALTER DEFAULT PRIVILEGES IN SCHEMA alquila_dvd REVOKE ALL ON TABLES FROM uie_permisos;
 
@@ -236,4 +240,34 @@ ALTER TABLE alquila_dvd.language ALTER COLUMN language_id  SET DATA TYPE int;
 ALTER TABLE alquila_dvd.language ALTER COLUMN language_id ADD GENERATED ALWAYS AS IDENTITY (RESTART 100);
 -- Ponemos como char(1)
 INSERT INTO alquila_dvd.LANGUAGE (name, last_update)  VALUES( 'Spanish', now());
+-- Cambiar tipo de columna de integer a boolean
+ALTER TABLE alquila_dvd.customer ALTER COLUMN active DROP DEFAULT;
+ALTER TABLE  alquila_dvd.customer ALTER active TYPE bool USING CASE WHEN active=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE  alquila_dvd.customer ALTER COLUMN active SET DEFAULT FALSE;
+-- Añadir fila a tabla staff para el NATURAL JOIN
+INSERT INTO alquila_dvd.staff (first_name,last_name,address_id,email,store_id,username,"password",last_update)
+	VALUES ('Linda','Williams',7,'linda.williams@sakilacustomer.org',1,'Linda','8cb2237d0679ca88db6464eac60da96345513964','2013-05-26 14:49:45.738');
+-- Añadimos filas a customer
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(2, 'Pepe', 'Perez', 'no_tiene@sindominio.com', 501, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(1, 'Pepito', 'Perez', 'no_tiene@sindominio.com', 502, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(1, 'Juan', 'García', 'no_tiene@sindominio.com', 405, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(2, 'Juanito', 'Sin miedo', 'no_tiene@sindominio.com', 302, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(2, 'Antonio', 'Romero', 'no_tiene@sindominio.com', 303, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(2, 'Pepa', 'Romero', 'no_tiene@sindominio.com', 305, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(1, 'Juana', 'Romero', 'no_tiene@sindominio.com', 406, true);
+INSERT INTO alquila_dvd.customer(store_id, first_name, last_name, email, address_id , active)
+VALUES(1, 'Juanita', 'Banana', 'no_tiene@sindominio.com', 504, true);
+-- Para ejemplo de nullif
+UPDATE alquila_dvd.customer
+SET create_date='2024-10-13', last_update=now(), active=FALSE WHERE customer_id=605;
+UPDATE alquila_dvd.customer
+SET create_date='2024-10-13', last_update=now(), activebool=TRUE WHERE customer_id=605;
+COMMIT;
 
